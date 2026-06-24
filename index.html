@@ -273,8 +273,8 @@ function getStatus(topic){
 
 async function load(){
   try{
-    const res = await window.storage.get(STORAGE_KEY, false);
-    topics = res ? JSON.parse(res.value) : [];
+    const raw = localStorage.getItem(STORAGE_KEY);
+    topics = raw ? JSON.parse(raw) : [];
   }catch(e){
     topics = [];
   }
@@ -282,7 +282,7 @@ async function load(){
 }
 async function save(){
   try{
-    await window.storage.set(STORAGE_KEY, JSON.stringify(topics), false);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(topics));
   }catch(e){
     console.error('Could not save', e);
   }
