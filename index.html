@@ -211,7 +211,7 @@
   <div id="lists"></div>
 
   <footer>
-    Schedule: revise 1, 3, 7, 14, and 30 days after you first learn something — the standard spacing pattern built from the Ebbinghaus forgetting curve. Mark a revision done and the next date appears automatically. Tap "Remind me" to drop a real reminder into Google Calendar for that date, so your phone notifies you even with this page closed. Stored privately in this artifact, only visible to you.
+    Made by ranak to revise on day 1, 3, 7, 14, and 30 days after you first learn something — the standard spacing pattern built from the Ebbinghaus forgetting curve.
   </footer>
 </div>
 
@@ -304,13 +304,58 @@ function deleteTopic(id){
   render();
 }
 
-function calendarLink(title, dateStr, revisionLabel){
-  const start = dateStr.replace(/-/g,'');
-  const end = addDaysStr(dateStr, 1).replace(/-/g,'');
-  const text = encodeURIComponent('Revise: ' + title);
-  const details = encodeURIComponent(revisionLabel + ' — scheduled by Embers');
-  return 'https://calendar.google.com/calendar/render?action=TEMPLATE&text=' + text +
-    '&dates=' + start + '/' + end + '&details=' + details;
+function pad2(n){ return n < 10 ? '0'+n : ''+n; }
+function icsDate(dateStr, hh, mm){
+  return dateStr.replace(/-/g,'') + 'T' + pad2(hh) + pad2(mm) + '00';
+}
+function icsStamp(){
+  const d = new Date();
+  return d.getUTCFullYear()+pad2(d.getUTCMonth()+1)+pad2(d.getUTCDate())+'T'+pad2(d.getUTCHours())+pad2(d.getUTCMinutes())+pad2(d.getUTCSeconds())+'Z';
+}
+function icsEscape(s){
+  return s.replace(/[\r\n]/g,' ').replace(/([,;])/g, '\\$1');
+}
+function buildIcsForTopic(t){
+  const st = getStatus(t);
+  if(st.mastered) return null;
+  const name = icsEscape(t.name);
+  let events = '';
+  for(let i = st.idx; i < INTERVALS.length; i++){
+    const dueDate = addDaysStr(t.learnedDate, INTERVALS[i]);
+    const uid = t.id + '-' + i + '@embers.app';
+    events += [
+      'BEGIN:VEVENT',
+      'UID:' + uid,
+      'DTSTAMP:' + icsStamp(),
+      'DTSTART:' + icsDate(dueDate, 9, 0),
+      'DTEND:' + icsDate(dueDate, 9, 30),
+      'SUMMARY:Revise: ' + name,
+      'DESCRIPTION:Revision ' + (i+1) + ' of ' + INTERVALS.length + ' -- scheduled by Embers',
+      'BEGIN:VALARM',
+      'ACTION:DISPLAY',
+      'DESCRIPTION:Revise: ' + name,
+      'TRIGGER:-PT0M',
+      'END:VALARM',
+      'END:VEVENT'
+    ].join('\r\n') + '\r\n';
+  }
+  return ['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//Embers//Revision Reminders//EN','CALSCALE:GREGORIAN'].join('\r\n')
+    + '\r\n' + events + 'END:VCALENDAR\r\n';
+}
+function downloadReminders(id){
+  const t = topics.find(x => x.id === id);
+  if(!t) return;
+  const ics = buildIcsForTopic(t);
+  if(!ics) return;
+  const blob = new Blob([ics], {type:'text/calendar'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'embers-' + t.name.replace(/[^a-z0-9]+/gi,'-').toLowerCase() + '.ics';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(function(){ URL.revokeObjectURL(url); }, 1000);
 }
 
 function render(){
@@ -363,7 +408,7 @@ function render(){
           '<div class="card-top">'+
             '<p class="topic-name">'+esc(t.name)+'</p>'+
             '<div class="card-actions">'+
-              '<a class="ghost" style="text-decoration:none; display:inline-block;" href="'+calendarLink(t.name, s.dueDate, 'Revision '+(s.idx+1)+' of '+INTERVALS.length)+'" target="_blank" rel="noopener">Remind me</a>'+
+              '<button class="ghost" onclick="downloadReminders(\''+t.id+'\')">Add reminders</button>'+
               '<button class="ghost" onclick="markRevised(\''+t.id+'\')">Mark revised</button>'+
               '<button class="icon-x" aria-label="Delete topic" onclick="deleteTopic(\''+t.id+'\')">&times;</button>'+
             '</div>'+
