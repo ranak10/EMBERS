@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Embers — revision reminders</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#181614">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Embers">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg: #181614;
+    --surface: #221F1C;
+    --surface-2: #2B2723;
+    --line: #3A3530;
+    --text: #EDE6DA;
+    --text-dim: #A89D8E;
+    --text-faint: #756B61;
+    --hot: #F2A65A;
+    --hot-deep: #C46A2E;
+    --ash: #5C5650;
+    --danger: #D9694A;
+  }
+  *{ box-sizing: border-box; }
+  body{
+    margin:0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Inter', system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap{ max-width: 640px; margin: 0 auto; padding: 2.5rem 1.5rem 4rem; }
+  header h1{
+    font-family: 'Fraunces', serif;
+    font-weight: 500;
+    font-size: 2.4rem;
+    margin: 0 0 0.2rem;
+    letter-spacing: -0.01em;
+    color: var(--hot);
+  }
+  header p{
+    margin: 0 0 1.75rem;
+    color: var(--text-dim);
+    font-size: 0.95rem;
+  }
+  .strip{
+    display:none;
+    background: rgba(217,105,74,0.12);
+    border: 1px solid rgba(217,105,74,0.35);
+    color: var(--text);
+    border-radius: 10px;
+    padding: 0.7rem 1rem;
+    font-size: 0.9rem;
+    margin-bottom: 1.5rem;
+  }
+  .strip strong{ color: var(--danger); }
+  form.add{
+    display:flex;
+    gap: 0.6rem;
+    margin-bottom: 2rem;
+    flex-wrap: wrap;
+  }
+  form.add input[type="text"]{
+    flex: 1 1 200px;
+  }
+  input, button{
+    font-family: inherit;
+    font-size: 0.9rem;
+  }
+  input[type="text"], input[type="date"]{
+    background: var(--surface);
+    border: 1px solid var(--line);
+    color: var(--text);
+    border-radius: 8px;
+    padding: 0.55rem 0.7rem;
+  }
+  input[type="text"]::placeholder{ color: var(--text-faint); }
+  input[type="text"]:focus, input[type="date"]:focus{
+    outline: none;
+    border-color: var(--hot-deep);
+    box-shadow: 0 0 0 3px rgba(242,166,90,0.15);
+  }
+  button{
+    background: var(--hot);
+    color: #2A1A0A;
+    border: none;
+    border-radius: 8px;
+    padding: 0.55rem 1rem;
+    font-weight: 500;
+    cursor: pointer;
+  }
+  button:hover{ background: #f6b677; }
+  button:active{ transform: scale(0.98); }
+  button.ghost{
+    background: transparent;
+    color: var(--text-dim);
+    border: 1px solid var(--line);
+    padding: 0.45rem 0.7rem;
+  }
+  button.ghost:hover{ background: var(--surface-2); color: var(--text); }
+  button.icon-x{
+    background: transparent;
+    color: var(--text-faint);
+    border: none;
+    font-size: 1rem;
+    padding: 0.2rem 0.5rem;
+    line-height: 1;
+  }
+  button.icon-x:hover{ color: var(--danger); background: transparent; }
+  section.group{ margin-bottom: 1.6rem; }
+  .group-label{
+    font-size: 0.75rem;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--text-faint);
+    margin: 0 0 0.6rem 0.1rem;
+  }
+  .card{
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 0.9rem 1rem;
+    margin-bottom: 0.6rem;
+    display:flex;
+    align-items:flex-start;
+    gap: 0.8rem;
+  }
+  .card.mastered{ opacity: 0.6; }
+  .ember-dot{
+    width: 13px; height: 13px;
+    border-radius: 50%;
+    margin-top: 0.35rem;
+    flex-shrink: 0;
+  }
+  .card-body{ flex: 1; min-width: 0; }
+  .card-top{
+    display:flex;
+    justify-content: space-between;
+    align-items:flex-start;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+  }
+  .topic-name{
+    font-weight: 500;
+    font-size: 0.98rem;
+    margin: 0;
+    word-break: break-word;
+  }
+  .meta{
+    font-size: 0.82rem;
+    color: var(--text-dim);
+    margin: 0.15rem 0 0.55rem;
+    font-family: 'Inter', sans-serif;
+  }
+  .meta .due-tag{ color: var(--text); }
+  .meta .overdue-tag{ color: var(--danger); font-weight: 500; }
+  .ticks{
+    display:flex;
+    gap: 5px;
+    margin-bottom: 0.55rem;
+  }
+  .tick{
+    width: 16px; height: 4px;
+    border-radius: 2px;
+    background: var(--line);
+  }
+  .tick.done{ background: var(--hot-deep); }
+  .tick.current{ background: var(--hot); }
+  .card-actions{
+    display:flex;
+    gap: 0.5rem;
+    align-items:center;
+  }
+  .empty{
+    color: var(--text-faint);
+    font-size: 0.9rem;
+    padding: 1.5rem 0;
+    text-align:center;
+    border: 1px dashed var(--line);
+    border-radius: 12px;
+  }
+  footer{
+    margin-top: 2.5rem;
+    font-size: 0.78rem;
+    color: var(--text-faint);
+    line-height: 1.6;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Embers</h1>
+    <p>Spaced revision reminders — keep what you've learned from going cold.</p>
+  </header>
+
+  <div class="strip" id="todayStrip"></div>
+
+  <form class="add" id="addForm">
+    <input type="text" id="topicName" placeholder="Topic, e.g. CAGED chord shapes" required maxlength="120">
+    <input type="date" id="learnedDate">
+    <button type="submit">Add</button>
+  </form>
+
+  <div id="lists"></div>
+
+  <footer>
+    Schedule: revise 1, 3, 7, 14, and 30 days after you first learn something — the standard spacing pattern built from the Ebbinghaus forgetting curve. Mark a revision done and the next date appears automatically. Tap "Remind me" to drop a real reminder into Google Calendar for that date, so your phone notifies you even with this page closed. Stored privately in this artifact, only visible to you.
+  </footer>
+</div>
+
+<script>
+const STORAGE_KEY = 'embers:topics';
+const INTERVALS = [1,3,7,14,30];
+let topics = [];
+
+function pad(n){ return n < 10 ? '0'+n : ''+n; }
+function todayStr(){
+  const d = new Date();
+  return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
+}
+function addDaysStr(dateStr, n){
+  const [y,m,d] = dateStr.split('-').map(Number);
+  const dt = new Date(y, m-1, d);
+  dt.setDate(dt.getDate()+n);
+  return dt.getFullYear()+'-'+pad(dt.getMonth()+1)+'-'+pad(dt.getDate());
+}
+function daysBetween(aStr, bStr){
+  const [ay,am,ad] = aStr.split('-').map(Number);
+  const [by,bm,bd] = bStr.split('-').map(Number);
+  const a = new Date(ay, am-1, ad);
+  const b = new Date(by, bm-1, bd);
+  return Math.round((b - a) / 86400000);
+}
+function formatDate(dateStr){
+  const [y,m,d] = dateStr.split('-').map(Number);
+  const dt = new Date(y, m-1, d);
+  return dt.toLocaleDateString(undefined, {month:'short', day:'numeric'});
+}
+function esc(s){
+  const div = document.createElement('div');
+  div.textContent = s;
+  return div.innerHTML;
+}
+function lerp(a,b,t){ return Math.round(a + (b-a)*t); }
+function emberColor(ratio){
+  const hot = [242,166,90];
+  const ash = [92,86,80];
+  const r = lerp(hot[0], ash[0], ratio);
+  const g = lerp(hot[1], ash[1], ratio);
+  const b = lerp(hot[2], ash[2], ratio);
+  return 'rgb('+r+','+g+','+b+')';
+}
+
+function getStatus(topic){
+  const today = todayStr();
+  const idx = topic.completed.findIndex(c => !c);
+  if(idx === -1) return { mastered: true };
+  const dueDate = addDaysStr(topic.learnedDate, topic.intervals[idx]);
+  const anchorDate = idx === 0 ? topic.learnedDate : (topic.completedDates[idx-1] || topic.learnedDate);
+  const totalSpan = Math.max(1, daysBetween(anchorDate, dueDate));
+  const elapsed = Math.max(0, daysBetween(anchorDate, today));
+  const ratio = Math.min(1, elapsed / totalSpan);
+  const diff = daysBetween(today, dueDate);
+  return { mastered: false, idx, dueDate, ratio, diff };
+}
+
+async function load(){
+  try{
+    const res = await window.storage.get(STORAGE_KEY, false);
+    topics = res ? JSON.parse(res.value) : [];
+  }catch(e){
+    topics = [];
+  }
+  render();
+}
+async function save(){
+  try{
+    await window.storage.set(STORAGE_KEY, JSON.stringify(topics), false);
+  }catch(e){
+    console.error('Could not save', e);
+  }
+}
+
+function markRevised(id){
+  const t = topics.find(x => x.id === id);
+  if(!t) return;
+  const st = getStatus(t);
+  if(st.mastered) return;
+  t.completed[st.idx] = true;
+  t.completedDates[st.idx] = todayStr();
+  save();
+  render();
+}
+function deleteTopic(id){
+  topics = topics.filter(x => x.id !== id);
+  save();
+  render();
+}
+
+function calendarLink(title, dateStr, revisionLabel){
+  const start = dateStr.replace(/-/g,'');
+  const end = addDaysStr(dateStr, 1).replace(/-/g,'');
+  const text = encodeURIComponent('Revise: ' + title);
+  const details = encodeURIComponent(revisionLabel + ' — scheduled by Embers');
+  return 'https://calendar.google.com/calendar/render?action=TEMPLATE&text=' + text +
+    '&dates=' + start + '/' + end + '&details=' + details;
+}
+
+function render(){
+  const lists = document.getElementById('lists');
+  const strip = document.getElementById('todayStrip');
+
+  const withStatus = topics.map(t => ({ t, s: getStatus(t) }));
+  const dueCount = withStatus.filter(x => !x.s.mastered && x.s.diff <= 0).length;
+
+  if(dueCount > 0){
+    strip.style.display = 'block';
+    strip.innerHTML = '<strong>'+dueCount+'</strong> ember'+(dueCount>1?'s':'')+' need'+(dueCount>1?'':'s')+' tending today.';
+  } else {
+    strip.style.display = 'none';
+  }
+
+  const active = withStatus.filter(x => !x.s.mastered)
+    .sort((a,b) => a.s.diff - b.s.diff);
+  const mastered = withStatus.filter(x => x.s.mastered);
+
+  if(topics.length === 0){
+    lists.innerHTML = '<div class="empty">No embers yet. Add a topic above to start tracking its revision dates.</div>';
+    return;
+  }
+
+  let html = '';
+
+  if(active.length){
+    html += '<section class="group"><div class="group-label">To revise</div>';
+    active.forEach(({t, s}) => {
+      const color = emberColor(s.ratio);
+      const glow = (1 - s.ratio) * 0.55;
+      let metaHtml;
+      if(s.diff > 0){
+        metaHtml = 'Revision '+(s.idx+1)+' of '+INTERVALS.length+' &middot; <span class="due-tag">due '+formatDate(s.dueDate)+' (in '+s.diff+'d)</span>';
+      } else if(s.diff === 0){
+        metaHtml = 'Revision '+(s.idx+1)+' of '+INTERVALS.length+' &middot; <span class="due-tag">due today</span>';
+      } else {
+        metaHtml = 'Revision '+(s.idx+1)+' of '+INTERVALS.length+' &middot; <span class="overdue-tag">overdue by '+(-s.diff)+'d</span>';
+      }
+      const ticks = INTERVALS.map((iv, i) => {
+        let cls = 'tick';
+        if(t.completed[i]) cls += ' done';
+        else if(i === s.idx) cls += ' current';
+        return '<div class="'+cls+'"></div>';
+      }).join('');
+      html += '<div class="card">'+
+        '<div class="ember-dot" style="background:'+color+'; box-shadow: 0 0 '+(8+glow*10)+'px rgba(242,166,90,'+glow+');"></div>'+
+        '<div class="card-body">'+
+          '<div class="card-top">'+
+            '<p class="topic-name">'+esc(t.name)+'</p>'+
+            '<div class="card-actions">'+
+              '<a class="ghost" style="text-decoration:none; display:inline-block;" href="'+calendarLink(t.name, s.dueDate, 'Revision '+(s.idx+1)+' of '+INTERVALS.length)+'" target="_blank" rel="noopener">Remind me</a>'+
+              '<button class="ghost" onclick="markRevised(\''+t.id+'\')">Mark revised</button>'+
+              '<button class="icon-x" aria-label="Delete topic" onclick="deleteTopic(\''+t.id+'\')">&times;</button>'+
+            '</div>'+
+          '</div>'+
+          '<p class="meta">'+metaHtml+'</p>'+
+          '<div class="ticks">'+ticks+'</div>'+
+        '</div>'+
+      '</div>';
+    });
+    html += '</section>';
+  }
+
+  if(mastered.length){
+    html += '<section class="group"><div class="group-label">Mastered ('+mastered.length+')</div>';
+    mastered.forEach(({t}) => {
+      html += '<div class="card mastered">'+
+        '<div class="ember-dot" style="background: var(--ash);"></div>'+
+        '<div class="card-body">'+
+          '<div class="card-top">'+
+            '<p class="topic-name">'+esc(t.name)+'</p>'+
+            '<div class="card-actions">'+
+              '<button class="icon-x" aria-label="Delete topic" onclick="deleteTopic(\''+t.id+'\')">&times;</button>'+
+            '</div>'+
+          '</div>'+
+          '<p class="meta">All 5 revisions complete</p>'+
+        '</div>'+
+      '</div>';
+    });
+    html += '</section>';
+  }
+
+  lists.innerHTML = html;
+}
+
+document.getElementById('learnedDate').value = todayStr();
+document.getElementById('addForm').addEventListener('submit', function(e){
+  e.preventDefault();
+  const nameInput = document.getElementById('topicName');
+  const dateInput = document.getElementById('learnedDate');
+  const name = nameInput.value.trim();
+  if(!name) return;
+  const learnedDate = dateInput.value || todayStr();
+  topics.push({
+    id: Date.now().toString(36) + Math.random().toString(36).slice(2,7),
+    name: name,
+    learnedDate: learnedDate,
+    intervals: INTERVALS.slice(),
+    completed: [false,false,false,false,false],
+    completedDates: [null,null,null,null,null]
+  });
+  nameInput.value = '';
+  dateInput.value = todayStr();
+  save();
+  render();
+});
+
+load();
+
+if('serviceWorker' in navigator){
+  window.addEventListener('load', function(){
+    navigator.serviceWorker.register('sw.js').catch(function(){});
+  });
+}
+</script>
+</body>
+</html>
